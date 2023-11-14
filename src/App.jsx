@@ -1,63 +1,78 @@
-import React, { useState, useEffect } from "react";
-import { SearchBar, CryptoList } from "./components";
+import React, { Component } from "react";
 import axios from "axios";
+import SearchBar from "./components/SearchBar";
+import CryptoList from "./components/CryptoList";
 
-const App = () => {
-  const [followedCryptos, setFollowedCryptos] = useState(["DOGE"]);
-  const [cryptoData, setCryptoData] = useState({});
-  const [error, setError] = useState(null);
+class App extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      followedCryptos: ["DOGE"],
+      cryptoData: {},
+      error: null,
+    };
+  }
 
-  const fetchCryptoData = async (crypto) => {
+  componentDidMount() {
+    this.fetchData("DOGE");
+  }
+
+  fetchCryptoData = async (crypto) => {
     try {
       const response = await axios.get(
         `https://min-api.cryptocompare.com/data/price?fsym=${crypto}&tsyms=USD&api_key=9213cb766fb502ad31d61e2996dc321513611ba5664b4b51c364be7db764e9c9`
       );
       return response.data;
     } catch (error) {
-      setError("Error fetching data");
+      this.setState({ error: "Error fetching data" });
       return null;
     }
   };
 
-  const addCrypto = async (crypto) => {
-    const data = await fetchCryptoData(crypto);
+  addCrypto = async (crypto) => {
+    const { followedCryptos, cryptoData } = this.state;
+    const data = await this.fetchCryptoData(crypto);
+
     if (data) {
       if (!followedCryptos.includes(crypto)) {
-        setFollowedCryptos([...followedCryptos, crypto]);
-        setCryptoData({ ...cryptoData, [crypto]: data.USD });
+        this.setState({
+          followedCryptos: [...followedCryptos, crypto],
+          cryptoData: { ...cryptoData, [crypto]: data.USD },
+        });
       }
     }
   };
 
-  const deleteCrypto = (crypto) => {
+  deleteCrypto = (crypto) => {
+    const { followedCryptos, cryptoData } = this.state;
     const updatedCryptos = followedCryptos.filter((item) => item !== crypto);
-    setFollowedCryptos(updatedCryptos);
     const updatedData = { ...cryptoData };
     delete updatedData[crypto];
-    setCryptoData(updatedData);
+    this.setState({ followedCryptos: updatedCryptos, cryptoData: updatedData });
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const data = await fetchCryptoData("DOGE");
-      if (data) {
-        setCryptoData({ DOGE: data.USD });
-      }
-    };
-    fetchData();
-  }, []);
+  fetchData = async (crypto) => {
+    const data = await this.fetchCryptoData(crypto);
+    if (data) {
+      this.setState({ cryptoData: { DOGE: data.USD } });
+    }
+  };
 
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <SearchBar addCrypto={addCrypto} />
-      {error && <p>{error}</p>}
-      <CryptoList
-        followedCryptos={followedCryptos}
-        cryptoData={cryptoData}
-        deleteCrypto={deleteCrypto}
-      />
-    </div>
-  );
-};
+  render() {
+    const { followedCryptos, cryptoData, error } = this.state;
+
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <SearchBar addCrypto={this.addCrypto} />
+        {error && <p>{error}</p>}
+        <CryptoList
+          followedCryptos={followedCryptos}
+          cryptoData={cryptoData}
+          deleteCrypto={this.deleteCrypto}
+        />
+      </div>
+    );
+  }
+}
 
 export default App;
