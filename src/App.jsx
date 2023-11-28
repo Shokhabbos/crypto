@@ -1,7 +1,8 @@
 import React, { Component } from "react";
 import axios from "axios";
-import SearchBar from "./components/SearchBar";
-import CryptoList from "./components/CryptoList";
+
+import { CryptoList, SearchBar } from "./components";
+import { API_URL, API_KEY } from "./constants";
 
 class App extends Component {
   constructor(props) {
@@ -20,8 +21,9 @@ class App extends Component {
   fetchCryptoData = async (crypto) => {
     try {
       const response = await axios.get(
-        `https://min-api.cryptocompare.com/data/price?fsym=${crypto}&tsyms=USD&api_key=9213cb766fb502ad31d61e2996dc321513611ba5664b4b51c364be7db764e9c9`
+        `${API_URL}?fsym=${crypto}&tsyms=USD&api_key=${API_KEY}`
       );
+
       return response.data;
     } catch (error) {
       this.setState({ error: "Error fetching data" });
