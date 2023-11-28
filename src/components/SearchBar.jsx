@@ -1,12 +1,9 @@
 import React, { Component } from "react";
 
 class SearchBar extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      inputValue: "",
-    };
-  }
+  state = {
+    inputValue: "",
+  };
 
   handleSearch = () => {
     const { addCrypto } = this.props;

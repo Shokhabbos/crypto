@@ -1,21 +1,22 @@
 import React, { Component } from "react";
 import axios from "axios";
-
 import { CryptoList, SearchBar } from "./components";
 import { API_URL, API_KEY } from "./constants";
 
 class App extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      followedCryptos: ["DOGE"],
-      cryptoData: {},
-      error: null,
-    };
-  }
+  state = {
+    followedCryptos: ["DOGE"],
+    cryptoData: {},
+    error: null,
+  };
 
   componentDidMount() {
     this.fetchData("DOGE");
+    this.updateInterval = setInterval(this.updateCryptoData, 5000);
+  }
+
+  componentWillUnmount() {
+    clearInterval(this.updateInterval);
   }
 
   fetchCryptoData = async (crypto) => {
@@ -23,7 +24,6 @@ class App extends Component {
       const response = await axios.get(
         `${API_URL}?fsym=${crypto}&tsyms=USD&api_key=${API_KEY}`
       );
-
       return response.data;
     } catch (error) {
       this.setState({ error: "Error fetching data" });
@@ -31,17 +31,50 @@ class App extends Component {
     }
   };
 
+  updateCryptoData = async () => {
+    const { followedCryptos, cryptoData } = this.state;
+
+    const cryptoDataPromises = followedCryptos.map((crypto) =>
+      this.fetchCryptoData(crypto)
+    );
+    const cryptoDataArray = await Promise.all(cryptoDataPromises);
+    const updatedCryptoData = cryptoDataArray.reduce((acc, curr, index) => {
+      acc[followedCryptos[index]] = curr.USD;
+      return acc;
+    }, {});
+
+    this.setState({ cryptoData: updatedCryptoData });
+  };
+
   addCrypto = async (crypto) => {
     const { followedCryptos, cryptoData } = this.state;
+
+    if (followedCryptos.includes(crypto)) {
+      const valueInUSD = cryptoData[crypto]
+        ? `$${cryptoData[crypto]}`
+        : "Data Unavailable";
+      const message = `${crypto} is already being followed. Value: ${valueInUSD}`;
+      alert(message);
+      return;
+    }
+
     const data = await this.fetchCryptoData(crypto);
 
     if (data) {
-      if (!followedCryptos.includes(crypto)) {
-        this.setState({
-          followedCryptos: [...followedCryptos, crypto],
-          cryptoData: { ...cryptoData, [crypto]: data.USD },
-        });
-      }
+      const updatedCryptoData = { ...cryptoData, [crypto]: data.USD };
+      const updatedFollowedCryptos = [...followedCryptos, crypto];
+
+      this.setState(
+        {
+          followedCryptos: updatedFollowedCryptos,
+          cryptoData: updatedCryptoData,
+        },
+        () => {
+          if (followedCryptos.length === 0) {
+            this.updateInterval = setInterval(this.updateCryptoData, 5000);
+          }
+        }
+      );
     }
   };
 
